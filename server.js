@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Server } from 'socket.io';
 import { fileTypeFromBuffer } from 'file-type';
-import { writeFile, readFile, createWriteStream } from 'node:fs';
+import { writeFile, readFile, createWriteStream, existsSync, mkdirSync } from 'node:fs';
 import util from 'util';
 import cors from 'cors';
 
@@ -114,3 +114,14 @@ function checkIfFileExists(filename) {
 server.listen(3001, () => {
     logToFile('server running at http://localhost:3001');
 });
+
+var dir = './files';
+if (!existsSync(dir)){
+    mkdirSync(dir);
+}
+//check if data.json exists, if it does not then create it and put "[]" inside the file
+if (!existsSync('./data.json')) {
+    writeFile('./data.json', '[]', (err) => {
+        if (err) logToFile(err);
+    });
+}
