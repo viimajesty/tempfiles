@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Server } from 'socket.io';
 import { fileTypeFromBuffer } from 'file-type';
-import { writeFile, readFile, createWriteStream, existsSync, mkdirSync } from 'node:fs';
+import { writeFile, readFile, createWriteStream, existsSync, mkdirSync, statSync } from 'node:fs';
 import util from 'util';
 import cors from 'cors';
 
@@ -24,7 +24,7 @@ const app = express();
 app.use(cors());
 const server = createServer(app);
 
-const io = new Server(server, { maxHttpBufferSize: 1e8 });
+const io = new Server(server, { maxHttpBufferSize: 5e7 });
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 //functions 
@@ -59,11 +59,6 @@ async function fileUpload(file, callback) {
     if (file == null) {
         logToFile("failure: file not found");
         return callback({ message: "failure: file not found", status: "failure" });
-    }
-    //if file size greater than 50mb then callback failure
-    if (file.length > 50000000) {
-        logToFile("failure: file size greater than 50mb");
-        return callback({ message: "failure: file size greater than 50mb", status: "failure" });
     }
     let fileType = await fileTypeFromBuffer(file);
     if (fileType == null) {

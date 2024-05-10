@@ -24,6 +24,11 @@
         e.preventDefault();
 
         let file = form.file.files[0];
+        //check if file > 48mb
+        if(file.size > 48000000){ 
+            alert("file size is too large");
+            return;
+        }
         let formData = new FormData();
         formData.append("file", file);
         socket.emit("upload", files, (response) => {
