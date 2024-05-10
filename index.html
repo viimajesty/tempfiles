@@ -8,6 +8,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
         integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
         crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
 
 </head>
 <h1>Welcome to file uploads</h1>
@@ -15,8 +16,10 @@
     <input type="file" name="file" id="file">
     <input type="submit" value="upload" id="uploadBtn">
 </form>
-
+<br>
+<a id="fileurl"></a><br>
 <script>
+    let fileurl = "";
     let socket = io();
     let form = document.getElementById("uploadForm");
     form.addEventListener("submit", (e) => {
@@ -25,7 +28,7 @@
 
         let file = form.file.files[0];
         //check if file > 48mb
-        if(file.size > 48000000){ 
+        if (file.size > 48000000) {
             alert("file size is too large");
             return;
         }
@@ -34,21 +37,27 @@
         socket.emit("upload", files, (response) => {
             console.log(response);
             if (response.status != "failure") {
-                let anchor = document.createElement("a");
-                anchor.href = `/${response.filename}`;
-                anchor.innerText = response.filename;
-                document.body.append(anchor);
+                // let anchor = document.getElementById("fileurl");
+                // anchor.href = `/${response.filename}`;
+                // let url = window.location.href + "/" + response.filename;
+                // anchor.innerText = url;
+                // fileurl = url;
+                // document.body.append(anchor);
+                let url = new URL(window.location.href).host + "/" + response.filename;
+                document.querySelector('html').innerText = url;
+
                 document.getElementById("uploadBtn").value = "done...";
 
             } else {
                 alert(response.message)
             }
 
-        }); 
+        });
         document.getElementById("uploadBtn").disabled = true;
         document.getElementById("uploadBtn").value = "Uploading...";
         console.log(formData)
     });
+
 </script>
 
 

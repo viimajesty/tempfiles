@@ -1,13 +1,33 @@
+import https from 'https';
 import express from 'express';
-import { createServer } from 'node:http';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { Server } from 'socket.io';
 import { fileTypeFromBuffer } from 'file-type';
-import { writeFile, readFile, createWriteStream, existsSync, mkdirSync, statSync } from 'node:fs';
+import { writeFile, readFile, createWriteStream, existsSync, mkdirSync } from 'fs';
 import util from 'util';
 import cors from 'cors';
+import { readFileSync } from 'fs';
 
+const app = express();
+app.use(cors());
+
+const server = https.createServer({
+    key: readFileSync('./privkey.pem'),
+    cert: readFileSync('./cert.pem')
+}, app);
+
+const io = new Server(server, { maxHttpBufferSize: 5e7 });
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+server.listen(3001, () => {
+    console.log('server running at https://localhost:3001');
+});
+
+
+
+
+//functions
 //START LOG FUNCTION
 var log_file = createWriteStream('./debug.log', { flags: 'a' }); // Set the flags to 'a' to append to the file
 var log_stdout = process.stdout;
@@ -19,21 +39,24 @@ function logToFile(d) {
     log_stdout.write(util.format(d) + '\n');
 }
 //END LOG FUNCTION
-
-const app = express();
-app.use(cors());
-const server = createServer(app);
-
-const io = new Server(server, { maxHttpBufferSize: 5e7 });
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-//functions 
 function randomString(length) {
     const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     var result = '';
     for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
     return result;
 }
+
+var dir = './files';
+if (!existsSync(dir)) {
+    mkdirSync(dir);
+}
+//check if data.json exists, if it does not then create it and put "[]" inside the file
+if (!existsSync('./data.json')) {
+    writeFile('./data.json', '[]', (err) => {
+        if (err) logToFile(err);
+    });
+}
+
 //end functions
 
 app.get('/', (req, res) => {
@@ -107,21 +130,5 @@ function checkIfFileExists(filename) {
             let obj = JSON.parse(data);
             resolve(obj.some(item => item.id === filename));
         });
-    });
-}
-
-
-server.listen(3001, () => {
-    logToFile('server running at http://localhost:3001');
-});
-
-var dir = './files';
-if (!existsSync(dir)){
-    mkdirSync(dir);
-}
-//check if data.json exists, if it does not then create it and put "[]" inside the file
-if (!existsSync('./data.json')) {
-    writeFile('./data.json', '[]', (err) => {
-        if (err) logToFile(err);
     });
 }
