@@ -60,6 +60,11 @@ async function fileUpload(file, callback) {
         logToFile("failure: file not found");
         return callback({ message: "failure: file not found", status: "failure" });
     }
+    //if file size greater than 50mb then callback failure
+    if (file.length > 50000000) {
+        logToFile("failure: file size greater than 50mb");
+        return callback({ message: "failure: file size greater than 50mb", status: "failure" });
+    }
     let fileType = await fileTypeFromBuffer(file);
     if (fileType == null) {
         logToFile("failure: file type not found, using .txt");
