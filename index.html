@@ -59,7 +59,7 @@
                 // fileurl = url;
                 // document.body.append(anchor);
                 let url = new URL(window.location.href).host + "/" + response.filename;
-                document.querySelector('html').innerHTML = `<p style="padding:10px; font-family: Verdana;>${url}</p>`;
+                document.querySelector('html').innerHTML = `<p style="padding:10px; font-family: Verdana;">${url}</p>`;
 
                 document.getElementById("uploadBtn").value = "done...";
 
