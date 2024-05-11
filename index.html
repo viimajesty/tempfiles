@@ -11,13 +11,28 @@
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
 
 </head>
-<h1>Welcome to file uploads</h1>
-<form id="uploadForm">
-    <input type="file" name="file" id="file">
-    <input type="submit" value="upload" id="uploadBtn">
-</form>
-<br>
-<a id="fileurl"></a><br>
+
+<body>
+    <div class="container">
+        <div class="left">
+            <h1>Temporary file hosting</h1>
+            <p>
+                primarily for images and other small files. <br />
+                files will be automatically deleted after 2 days.<br />
+                anything that is illegal anywhere else is illegal here.
+            </p>
+            <form id="uploadForm">
+                <input type="file" name="file" id="file">
+                <input type="submit" value="upload" id="uploadBtn">
+            </form>
+            <br>
+            <a id="fileurl"></a><br>
+        </div>
+
+    </div>
+</body>
+
+
 <script>
     let fileurl = "";
     let socket = io();
@@ -60,5 +75,32 @@
 
 </script>
 
+<style>
+    html,
+    body {
+        font-family: Open Sans, Arial;
+        color: #454545;
+        font-size: 16px;
+        margin: 2em auto;
+        width: 100%;
+        padding: 1em;
+        line-height: 1.4;
+        -webkit-hyphens: auto;
+        -ms-hyphens: auto;
+        hyphens: auto;
+        background-color: lightblue;
+    }
+
+    .container {
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .left {
+        display: inline-block;
+        text-align: left;
+    }
+</style>
 
 </html>
