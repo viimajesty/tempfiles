@@ -78,7 +78,7 @@ io.on('connection', async function (socket) {
 });
 
 // Handle file uploads via curl or any form upload
-app.post('/upload', upload.single('file'), async (req, res) => {
+app.post('/', upload.single('file'), async (req, res) => {
     try {
         const file = req.file.buffer; // Get the file buffer from multer
         logToFile(file); // Log the file buffer
