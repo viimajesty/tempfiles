@@ -144,3 +144,46 @@ function checkIfFileExists(filename) {
         });
     });
 }
+
+async function fileUpload(file, callback) {
+    logToFile(file); // <Buffer 25 50 44 ...>
+    if (file == null) {
+        logToFile("failure: file not found");
+        return callback({ message: "failure: file not found", status: "failure" });
+    }
+    let fileType = await fileTypeFromBuffer(file);
+    if (fileType == null) {
+        logToFile("failure: file type not found, using .txt");
+        fileType = { ext: "txt" };
+        //return callback({ message: "failure: file type not found", status: "failure" });
+    }
+    logToFile(fileType)
+    let filename = randomString(4) + "." + fileType.ext;
+    let fileExists = await checkIfFileExists(filename);
+    let counter = 0;
+    while (fileExists) {
+        filename = randomString(4);
+        fileExists = await checkIfFileExists(filename);
+        counter++;
+        if (counter > 5) {
+            logToFile("failure: file already exists");
+            return callback({ message: "failure: file already exists", status: "failure" });
+        }
+    }
+
+    //read data.json and add new entry
+    readFile('./data.json', 'utf8', (err, data) => {
+        if (err) logToFile(err);
+        let obj = JSON.parse(data);
+        obj.push({ id: filename, date: new Date() });
+        writeFile('./data.json', JSON.stringify(obj), (err) => {
+            if (err) logToFile(err);
+        });
+    });
+
+    // save the content to the disk
+    writeFile(`./files/${filename}`, file, (err) => {
+        if (err) logToFile(err);
+        callback({ message: err ? "failure" : "success", filename: filename });
+    });
+}
