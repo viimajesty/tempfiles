@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>file uploads</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+        integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
+        crossorigin="anonymous"></script>
+    <link href="https://unpkg.com/tabulator-tables@6.3.0/dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.3.0/dist/js/tabulator.min.js"></script>
+</head>
+
+<body>
+    <h1>Admin page for temporary file hosting.</h1>
+    <p>we have been expecting you.</p>
+    <div id="table"></div>
+</body>
+<script>
+    function randomString(length) {
+        const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        var result = '';
+        for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+        return result;
+    }
+    const sessionID = randomString(10);
+    console.log(sessionID);
+    let socket = io();
+
+    window.onload = function getData() {
+        socket.emit("getData", sessionID, (res) => {
+            console.log(res)
+            let jsonData = res.resData;
+            // Initialize Tabulator
+            const table = new Tabulator("#table", {
+                data: jsonData,
+                layout: "fitColumns",
+                columns: [
+                    {
+                        title: "File ID",
+                        field: "id",
+                        formatter: (cell) => {
+                            // Create a link for the File ID
+                            const fileId = cell.getValue();
+                            return `<a href="/${fileId}" target="_blank">${fileId}</a>`;
+                        }
+                    },
+                    {
+                        title: "Upload Date", field: "date", formatter: (cell) => {
+                            const date = new Date(cell.getValue());
+                            return date.toLocaleString();
+                        }
+                    },
+                    { title: "User IP", field: "userip", hozAlign: "center" },
+                    { title: "File Hash", field: "filehash" },
+                    { title: "Delete", field: "id", formatter: "buttonCross", cellClick:function(e, cell){
+                        let conf = confirm(`Deleting file ${cell.getValue()}, ok?`);
+                        if(!conf) return;
+                        socket.emit("deleteFile", cell.getValue(), (res)=>{
+                            if(res.status==200){
+                                cell.getRow().delete();
+                            }
+                        })
+                    }},
+                    {title: "Preseve", field: "id", formatter:"rowSelection", hozAlign:"center", cellClick:function(e,cell){
+                        alert("This function is not available in your region.")
+                    }}
+                ]
+            });
+
+        })
+    }
+</script>
+
+</html>

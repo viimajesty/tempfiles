@@ -40,3 +40,5 @@ files/
 data.json
 cert.pem
 privkey.pem
+users.htpasswd
+.env

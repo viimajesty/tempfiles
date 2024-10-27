@@ -8,8 +8,6 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
         integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
         crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
-
 </head>
 
 <body>
@@ -28,52 +26,70 @@
             <br>
             <a id="fileurl"></a><br>
         </div>
-
+        <br />
+        <span id="ip"></span>
     </div>
+
 </body>
 
 
 <script>
+    let ip = ""
     let fileurl = "";
     let socket = io();
     let form = document.getElementById("uploadForm");
+
     form.addEventListener("submit", (e) => {
-        let files = document.getElementById("file").files[0];
         e.preventDefault();
 
-        let file = form.file.files[0];
-        //check if file > 48mb
-        if (file.size > 48000000) {
-            alert("file size is too large");
+        let file = document.getElementById("file").files[0];
+        if (!file) {
+            alert("Please select a file to upload.");
             return;
         }
+
+        // Check if file size is over 48 MB
+        if (file.size > 48000000) {
+            alert("File size is too large");
+            return;
+        }
+
+        // Create FormData and append file and additional data
         let formData = new FormData();
         formData.append("file", file);
-        socket.emit("upload", files, (response) => {
-            console.log(response);
-            if (response.status != "failure") {
-                // let anchor = document.getElementById("fileurl");
-                // anchor.href = `/${response.filename}`;
-                // let url = window.location.href + "/" + response.filename;
-                // anchor.innerText = url;
-                // fileurl = url;
-                // document.body.append(anchor);
-                let url = new URL(window.location.href).host + "/" + response.filename;
-                document.querySelector('html').innerHTML = `<p style="padding:10px; font-family: Verdana;">https://${url}</p>`;
+        formData.append("ip", ip);
 
-                document.getElementById("uploadBtn").value = "done...";
-
-            } else {
-                alert(response.message)
-            }
-
+        // Convert formData to a simple object to pass it over socket.io
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
         });
+
+        // Emit the event with the object containing file and IP address
+        socket.emit("upload", data, (response) => {
+            console.log(response);
+            if (response.status !== "failure") {
+                let url = `${new URL(window.location.href).host}/${response.filename}`;
+                document.querySelector('html').innerHTML = `<p style="padding:10px; font-family: Verdana;">https://${url}</p>`;
+                //document.getElementById("uploadBtn").value = "done...";
+            } else {
+                alert(response.message);
+            }
+        });
+
         document.getElementById("uploadBtn").disabled = true;
         document.getElementById("uploadBtn").value = "Uploading...";
-        console.log(formData)
     });
-
+    window.onload = async () => {
+        // var response = await fetch("http://ip-api.com/json");
+        // var data = await response.json();
+        // console.log(data.query);
+        // ip = data.query;
+        ip = "223.185.132.236"
+        document.getElementById("ip").innerText = "IP: " + ip;
+    }
 </script>
+
 
 <style>
     html,
@@ -81,14 +97,12 @@
         font-family: Open Sans, Arial;
         color: #454545;
         font-size: 16px;
-        margin: 2em auto;
-        width: 100%;
-        padding: 1em;
-        line-height: 1.4;
         -webkit-hyphens: auto;
         -ms-hyphens: auto;
         hyphens: auto;
         background-color: lightblue;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
     .container {
