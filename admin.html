@@ -19,6 +19,7 @@
     <br />
     <span id="ip"></span>
     <span id="currUser" style="display: block;"></span>
+    <span id="connectStatus" style="display: block;"></span>
 </body>
 <script>
     let terminalip;
@@ -31,6 +32,13 @@
     const sessionID = randomString(10);
     console.log(sessionID);
     let socket = io();
+    //update connection status
+    socket.on("connect", () => {
+        document.getElementById("connectStatus").innerText = "Status: Connected";
+    })
+    socket.on("disconnect", () => {
+        document.getElementById("connectStatus").innerText = "Status: Disconnected";
+    })
 
     window.onload = async function getData() {
         socket.emit("getData", { ip: "before definition", sessionID: sessionID }, async (res) => {

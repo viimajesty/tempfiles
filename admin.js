@@ -65,10 +65,10 @@ export async function deleteFile(data, callback) {
     try {
         const filename = data.id;
         const filePath = join(__dirname, '/files/', filename);
-        logToFile(`Deleting file: ${filePath}, requested by ${data.ip}`)
+        logToFile(`delete: ${filePath}, request: ${data.ip}`)
         unlink(filePath, (err) => {
             if (err) callback({ message: "failure", status: "failure" });
-            logToFile(`${filePath} deleted successfully.`);
+            logToFile(`deleted: ${filePath}`);
         }); callback({ message: "success", status: 200 });
     }
     catch {
@@ -88,7 +88,7 @@ export function preserveFile(data, callback) {
     } else {
         callback({ message: "File already exists in preserve.", status: 409 });
     }
-    logToFile(`File ${data.id} preserved, requested by ${data.ip}`);
+    logToFile(`preserved: ${data.id}, request: ${data.ip}`);
 
     callback({ status: 200 })
 };
@@ -103,7 +103,7 @@ export async function deletePreserve(data, callback) {
             lines.splice(index, 1);
             writeFileSync(preserveFilePath, lines.join('\n'));
         }
-        logToFile(`File ${data.id} deleted from preserve, requested by ${data.ip}`);
+        logToFile(`removed preserve: ${data.id}, request ${data.ip}`);
         callback({ status: 200 })
     }
     catch (err) {
