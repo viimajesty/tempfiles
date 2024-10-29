@@ -15,6 +15,7 @@ import dotenv from 'dotenv';
 import { getAdminData, deleteFile, preserveFile, deletePreserve, logToFile } from './admin.js';
 import { getClientIp } from 'request-ip';
 dotenv.config();
+let baseurl = process.env.baseurl || "http://localhost:3001/";
 
 const app = express();
 app.use(cors());
@@ -163,7 +164,7 @@ app.post('/', upload.single('file'), async (req, res) => {
                 logToFile(err);
                 return res.status(500).json({ message: "failure", status: "failure" });
             }
-            res.json({ message: "success", filename: filename });
+            res.json({ message: "success", filename: `${baseurl}${filename}` });
         });
     } catch (err) {
         logToFile(err);
@@ -266,6 +267,6 @@ async function fileUpload(file, ip, callback) {
     // Save the file to disk
     writeFile(`./files/${filename}`, file, (err) => {
         if (err) logToFile(err);
-        callback({ message: err ? "failure" : "success", filename: filename });
+        callback({ message: err ? "failure" : "success", filename: `${baseurl}${filename}` });
     });
 }
