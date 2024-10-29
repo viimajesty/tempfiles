@@ -94,6 +94,10 @@ if (!existsSync('./data.json')) {
     writeFile('./data.json', '[]', (err) => {
         if (err) logToFile(err);
     });
+}if (!existsSync('./preserve.txt')) {
+    writeFile('./preserve.txt', '[]', (err) => {
+        if (err) logToFile(err);
+    });
 }
 
 //initialize length

@@ -96,6 +96,7 @@
             });
             var response = await fetch("/getip");
             var data1 = await response.json();
+            terminalip = data1.ip;
             document.getElementById("ip").innerText = "Terminal IP: " + data1.ip;
         });
 
