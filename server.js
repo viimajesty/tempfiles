@@ -267,6 +267,6 @@ async function fileUpload(file, ip, callback) {
     // Save the file to disk
     writeFile(`./files/${filename}`, file, (err) => {
         if (err) logToFile(err);
-        callback({ message: err ? "failure" : "success", filename: `${baseurl}${filename}` });
+        callback({ message: err ? "failure" : "success", filename: filename });
     });
 }
