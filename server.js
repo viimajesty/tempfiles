@@ -6,15 +6,15 @@ import { dirname, join } from 'path';
 import { Server } from 'socket.io';
 import { fileTypeFromBuffer } from 'file-type';
 import { writeFile, readFile, createWriteStream, existsSync, mkdirSync, readFileSync, unlink } from 'fs';
-import util from 'util';
 import cors from 'cors';
 import multer from 'multer'; // Add multer for handling file uploads
 import crypto from 'crypto';
 import auth from 'http-auth';
 import { readdir } from 'fs/promises';
 import dotenv from 'dotenv';
+import { getAdminData, deleteFile, preserveFile, deletePreserve, logToFile } from './admin.js';
+import { getClientIp } from 'request-ip';
 dotenv.config();
-
 
 const app = express();
 app.use(cors());
@@ -32,6 +32,33 @@ app.use("/admin", (req, res, next) => {
     })(req, res);
 });
 
+//start ip 
+
+// app.use(function (req, _res, next) {
+//     req.ipInfo = Ipware.getClientIP(req)
+//     // { ip: '177.139.100.100', isPublic: true, isRouteTrusted: false }
+//     // do something with the ip address (e.g. pass it down through the request)
+//     // note: ip address doesn't change often, so better cache it for performance,
+//     // you should have distinct session ID for public and anonymous users to cache the ip address
+//     next();
+// });
+const ipMiddleware = function (req, _res, next) {
+    req.ipInfo = getClientIp(req);
+    next();
+};
+
+app.use(ipMiddleware);
+
+app.get("/getip", (req, res) => {
+    res.json({ ip: req.ipInfo });
+})
+//end ip
+
+//send current logged in user to client
+app.get("/getuser", basicAuth.check((req, res) => {
+    res.json({ username: req.user });
+}));
+
 // Set up multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() }); // Store files in memory for easier access
 
@@ -48,16 +75,7 @@ server.listen(3001, () => {
     console.log('server running at https://localhost:3001');
 });
 
-// Log function
-var log_file = createWriteStream('./debug.log', { flags: 'a' });
-var log_stdout = process.stdout;
 
-function logToFile(d) {
-    var now = new Date();
-    var datetime = now.toLocaleString();
-    log_file.write(datetime + ' ' + util.format(d) + '\n');
-    log_stdout.write(util.format(d) + '\n');
-}
 
 function randomString(length) {
     const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -77,12 +95,21 @@ if (!existsSync('./data.json')) {
     });
 }
 
-// Route to serve the homepage
+//initialize length
+let numOfFiles = 0;
+function updateNum() {
+    numOfFiles = JSON.parse(readFileSync('./data.json')).length;
+}
+updateNum()
+
+//PATHS DEFINE
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
 });
+app.get('/admin', (req, res) => {
+    res.sendFile(join(__dirname, 'admin.html'));
+});
 
-// Serve static files from the "files" directory
 app.use(express.static(join(__dirname, 'files')));
 
 // THIS FUNCTION IS ONLY FOR CURL BASED REQUESTS
@@ -181,6 +208,16 @@ io.on('connection', async function (socket) {
     socket.on("deleteFile", (data, callback) => {
         deleteFile(data, callback);
     })
+    socket.on("preserveFile", (data, callback) => {
+        preserveFile(data, callback);
+    })
+    socket.on("deletePreserve", (data, callback) => {
+        deletePreserve(data, callback);
+    })
+
+    socket.on("getNumOfFiles", (data, callback) => {
+        callback({ numOfFiles: numOfFiles });
+    })
 });
 
 // Update fileUpload function to handle both file and IP
@@ -232,73 +269,3 @@ async function fileUpload(file, ip, callback) {
         callback({ message: err ? "failure" : "success", filename: filename });
     });
 }
-
-
-
-// /admin path with http-auth
-app.get('/admin', (req, res) => {
-    res.sendFile(join(__dirname, 'admin.html'));
-});
-
-async function getAdminData(data, callback) {
-    try {
-        const result = await checkFilesInDirectory();
-        callback({ message: "success", status: "success", resData: result });
-    } catch (err) {
-        logToFile(err);
-        callback({ message: "failure", status: "failure" });
-    }
-}
-
-async function checkFilesInDirectory() {
-    try {
-        let jsonData = await readJSONFile();
-
-        // Read files from the './files/' directory
-        const filesInDirectory = await readdir(join(__dirname, '/files/'));
-
-        // Create a result array to store only files found in the directory
-        const result = [];
-
-        // Check each entry in the jsonData against the files in the directory
-        jsonData.forEach(item => {
-            if (filesInDirectory.includes(item.id)) {
-                // If the file exists in the directory, add the item to the result array
-                result.push(item);
-            }
-            // If the file does not exist, you can choose to ignore or do something else
-        });
-
-        return result;
-    } catch (error) {
-        console.error('Error reading directory:', error);
-    }
-}
-
-async function readJSONFile() {
-    try {
-        const data = await readFileSync('./data.json', 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading JSON file:', error);
-        return [];
-    }
-}
-
-async function deleteFile(data, callback) {
-    try {
-        const filename = data;
-        logToFile("deleting + " + filename)
-        const filePath = join(__dirname, '/files/', filename);
-        console.log(filePath)
-        unlink(filePath, (err) => {
-            if (err) callback({ message: "failure", status: "failure" });
-            console.log(`${filePath} deleted successfully.`);
-        }); callback({ message: "success", status: 200 });
-    }
-    catch {
-        callback({ message: "failure", status: "failure" });
-    }
-
-}
-

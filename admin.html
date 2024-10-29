@@ -13,11 +13,15 @@
 </head>
 
 <body>
-    <h1>Admin page for temporary file hosting.</h1>
+    <h1>temporary file uploads // admin</h1>
     <p>we have been expecting you.</p>
     <div id="table"></div>
+    <br />
+    <span id="ip"></span>
+    <span id="currUser" style="display: block;"></span>
 </body>
 <script>
+    let terminalip;
     function randomString(length) {
         const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var result = '';
@@ -28,10 +32,10 @@
     console.log(sessionID);
     let socket = io();
 
-    window.onload = function getData() {
-        socket.emit("getData", sessionID, (res) => {
+    window.onload = async function getData() {
+        socket.emit("getData", { ip: "before definition", sessionID: sessionID }, async (res) => {
             console.log(res)
-            let jsonData = res.resData;
+            let jsonData = res.resData.res;
             // Initialize Tabulator
             const table = new Tabulator("#table", {
                 data: jsonData,
@@ -54,23 +58,65 @@
                     },
                     { title: "User IP", field: "userip", hozAlign: "center" },
                     { title: "File Hash", field: "filehash" },
-                    { title: "Delete", field: "id", formatter: "buttonCross", cellClick:function(e, cell){
-                        let conf = confirm(`Deleting file ${cell.getValue()}, ok?`);
-                        if(!conf) return;
-                        socket.emit("deleteFile", cell.getValue(), (res)=>{
-                            if(res.status==200){
-                                cell.getRow().delete();
-                            }
-                        })
-                    }},
-                    {title: "Preseve", field: "id", formatter:"rowSelection", hozAlign:"center", cellClick:function(e,cell){
-                        alert("This function is not available in your region.")
-                    }}
+                    {
+                        title: "Delete", field: "id", formatter: "buttonCross", cellClick: function (e, cell) {
+                            let conf = confirm(`Deleting file ${cell.getValue()}, ok?`);
+                            if (!conf) return;
+                            socket.emit("deleteFile", { id: cell.getValue(), ip: terminalip }, (res) => {
+                                if (res.status == 200) {
+                                    cell.getRow().delete();
+                                }
+                            })
+                        }
+                    },
+                    {
+                        title: "Preseve", field: "id", formatter: (cell) => {
+                            return "<a href='#'>preserve</a>";
+                        }, cellClick: function (e, cell) {
+                            const currId = cell.getValue();
+                            socket.emit("preserveFile", { id: currId, ip: terminalip }, (res) => {
+                                if (res.status == 200) {
+                                    alert("File added to preserve list, click again to remove from list.")
+                                } else if (res.status == 409) {
+                                    let remove = confirm("File already exists in preserve list, remove?");
+                                    if (remove) {
+                                        socket.emit("deletePreserve", { id: currId, ip: terminalip }, (res) => {
+                                            if (res.status == 200) {
+                                                alert("Removed from preserve list.")
+                                            } else {
+                                                alert(`An error occurred. (HTTP ${res.status})`)
+                                            }
+                                        })
+                                    }
+                                }
+                            })
+                        }
+                    }
                 ]
             });
+            var response = await fetch("/getip");
+            var data1 = await response.json();
+            document.getElementById("ip").innerText = "Terminal IP: " + data1.ip;
+        });
 
-        })
+        var currUser = await fetch("/getuser")
+        if (currUser.status == 200) {
+            currUser = await currUser.json();
+
+            document.getElementById("currUser").innerText = "Logged in as: " + (currUser.username);
+        }
     }
+
+
 </script>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+    body {
+        font-family: 'Roboto Mono', monospace;
+        background-color: lightblue;
+    }
+</style>
 
 </html>

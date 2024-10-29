@@ -28,6 +28,7 @@
         </div>
         <br />
         <span id="ip"></span>
+        <span id="numOfFiles" style="display:block"></span>
     </div>
 
 </body>
@@ -38,7 +39,7 @@
     let fileurl = "";
     let socket = io();
     let form = document.getElementById("uploadForm");
-
+    
     form.addEventListener("submit", (e) => {
         e.preventDefault();
 
@@ -81,12 +82,15 @@
         document.getElementById("uploadBtn").value = "Uploading...";
     });
     window.onload = async () => {
-        // var response = await fetch("http://ip-api.com/json");
-        // var data = await response.json();
-        // console.log(data.query);
-        // ip = data.query;
-        ip = "223.185.132.236"
+        var response = await fetch("/getip");
+        var data = await response.json();
+        console.log(data.ip);
+        ip = data.ip;
         document.getElementById("ip").innerText = "IP: " + ip;
+
+        socket.emit("getNumOfFiles", "sessionID", (res) => {
+            document.getElementById("numOfFiles").innerText = "Number of files: " + res.numOfFiles;
+        })
     }
 </script>
 
