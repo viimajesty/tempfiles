@@ -156,7 +156,7 @@ app.post('/', upload.single('file'), async (req, res) => {
         readFile('./data.json', 'utf8', (err, data) => {
             if (err) logToFile(err);
             let obj = JSON.parse(data);
-            obj.push({ id: filename, date: new Date(), userip: userip, filehash: hash });
+            obj.push({ id: filename, date: new Date(), userip: userip, filehash: hash, method: "curl" });
             writeFile('./data.json', JSON.stringify(obj), (err) => {
                 if (err) logToFile(err);
             });
@@ -225,7 +225,7 @@ io.on('connection', async function (socket) {
     })
 });
 
-// Update fileUpload function to handle both file and IP
+// FOR WEB BASED UPLOADS
 async function fileUpload(file, ip, callback) {
     logToFile(`IP: ${ip}`); // Log the IP
 
@@ -262,7 +262,7 @@ async function fileUpload(file, ip, callback) {
     readFile('./data.json', 'utf8', (err, data) => {
         if (err) logToFile(err);
         let obj = JSON.parse(data);
-        obj.push({ id: filename, date: new Date(), userip: ip, filehash: hash }); // Add IP field if desired
+        obj.push({ id: filename, date: new Date(), userip: ip, filehash: hash, method: "web" }); // Add IP field if desired
         writeFile('./data.json', JSON.stringify(obj), (err) => {
             if (err) logToFile(err);
         });
