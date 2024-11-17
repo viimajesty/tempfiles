@@ -170,6 +170,7 @@ app.post('/', upload.single('file'), async (req, res) => {
             }
             res.json({ message: "success", filename: `${baseurl}${filename}` });
         });
+        updateNum();
     } catch (err) {
         logToFile(err);
         res.status(500).json({ message: "failure", status: "failure" });
@@ -273,4 +274,5 @@ async function fileUpload(file, ip, callback) {
         if (err) logToFile(err);
         callback({ message: err ? "failure" : "success", filename: filename });
     });
+    updateNum();
 }
