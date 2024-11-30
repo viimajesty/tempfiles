@@ -43,3 +43,4 @@ privkey.pem
 users.htpasswd
 .env
 preserve.txt
+urls.json

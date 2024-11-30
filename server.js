@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { Server } from 'socket.io';
 import { fileTypeFromBuffer } from 'file-type';
-import { writeFile, readFile, createWriteStream, existsSync, mkdirSync, readFileSync, unlink } from 'fs';
+import { writeFile, readFile, createWriteStream, existsSync, mkdirSync, readFileSync, unlink, writeFileSync } from 'fs';
 import cors from 'cors';
 import multer from 'multer'; // Add multer for handling file uploads
 import crypto from 'crypto';
@@ -35,14 +35,6 @@ app.use("/admin", (req, res, next) => {
 
 //start ip 
 
-// app.use(function (req, _res, next) {
-//     req.ipInfo = Ipware.getClientIP(req)
-//     // { ip: '177.139.100.100', isPublic: true, isRouteTrusted: false }
-//     // do something with the ip address (e.g. pass it down through the request)
-//     // note: ip address doesn't change often, so better cache it for performance,
-//     // you should have distinct session ID for public and anonymous users to cache the ip address
-//     next();
-// });
 const ipMiddleware = function (req, _res, next) {
     req.ipInfo = getClientIp(req);
     next();
@@ -60,9 +52,6 @@ app.get("/getuser", basicAuth.check((req, res) => {
     res.json({ username: req.user });
 }));
 
-// Set up multer for file uploads
-const upload = multer({ storage: multer.memoryStorage() }); // Store files in memory for easier access
-
 // Server setup (HTTP or HTTPS)
 let arg = process.argv[2];
 const server = arg === "http" ? http.createServer(app) : https.createServer({
@@ -75,6 +64,25 @@ const io = new Server(server, { maxHttpBufferSize: 5e7 });
 server.listen(3001, () => {
     console.log('server running at https://localhost:3001');
 });
+
+
+//url config
+const urlStoragePath = join(__dirname, 'urls.json');
+
+// Function to load existing URLs from the JSON file
+const loadUrls = () => {
+    if (existsSync(urlStoragePath)) {
+        const data = readFileSync(urlStoragePath);
+        return JSON.parse(data);
+    }
+    return {};
+};
+
+// Function to save URLs to the JSON file
+const saveUrls = (urls) => {
+    writeFileSync(urlStoragePath, JSON.stringify(urls, null, 2));
+};
+//end url config
 
 
 
@@ -94,7 +102,7 @@ if (!existsSync('./data.json')) {
     writeFile('./data.json', '[]', (err) => {
         if (err) logToFile(err);
     });
-}if (!existsSync('./preserve.txt')) {
+} if (!existsSync('./preserve.txt')) {
     writeFile('./preserve.txt', '[]', (err) => {
         if (err) logToFile(err);
     });
@@ -117,16 +125,35 @@ app.get('/admin', (req, res) => {
 
 app.use(express.static(join(__dirname, 'files')));
 
+const upload = multer({ storage: multer.memoryStorage() }); // Store files in memory for easier access
 // THIS FUNCTION IS ONLY FOR CURL BASED REQUESTS
 app.post('/', upload.single('file'), async (req, res) => {
     try {
         const userip = req.socket.remoteAddress
 
-        const file = req.file.buffer; // Get the file buffer from multer
-        logToFile(file); // Log the file buffer
-        if (!file) {
+        const file0 = req.file; // Get the file buffer from multer
+        const url = req.body.url;
+        let file;
+        logToFile(file0); // Log the file buffer
+        if (!file0 && url) {
+            console.log(url);
+            //shorten url
+            const originalUrl = url;
+            const uniqueKey = Math.random().toString(36).substring(2, 8); // Generate a unique key
+
+            // Load existing URLs and add the new one
+            const urls = loadUrls();
+            urls[uniqueKey] = originalUrl;
+            saveUrls(urls);
+
+            return res.status(200).json({ shortLink: baseurl + uniqueKey, status: "success" });
+
+            return;
+        } else if (!file0) {
             logToFile("failure: file not found");
             return res.status(400).json({ message: "failure: file not found", status: "failure" });
+        } else {
+            file = file0.buffer;
         }
         //get hash of file
         const hash = crypto.createHash('sha256').update(file).digest('hex');
@@ -276,3 +303,17 @@ async function fileUpload(file, ip, callback) {
     });
     updateNum();
 }
+
+
+
+app.get('*', function (req, res) {
+    const key = req.url.split("/")[1];
+    const urls = loadUrls();
+
+    if (urls[key]) {
+        res.redirect(urls[key]); // Redirect to the original URL
+    } else {
+        res.status(404).send('Requested URL not found.');
+    }
+
+});
